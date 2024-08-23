@@ -1,8 +1,9 @@
 import { messageQueue } from "../config/bullmq";
 
 const enqueueMessage = async (uniqueId: string, data: any, delay: number) => {
+  const jobId = `customer-${uniqueId}`;
   // Remove existing messages
-  const existingJob = await messageQueue.getJob(uniqueId);
+  const existingJob = await messageQueue.getJob(jobId);
 
   if (existingJob) {
     await existingJob.remove();
@@ -13,10 +14,10 @@ const enqueueMessage = async (uniqueId: string, data: any, delay: number) => {
   await messageQueue
     .add(jobName, data, {
       delay,
-      jobId: uniqueId,
+      jobId: jobId,
     })
     .then(() => {
-      console.log(`Message enqueued for jobId - ${uniqueId}`);
+      console.log(`Message enqueued for jobId - ${jobId}`);
     });
 };
 

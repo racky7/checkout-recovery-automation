@@ -1,7 +1,8 @@
 import { z } from "zod";
 import AbandonedCheckout from "../models/abandoned-checkout";
-import { getCustomerScheduleConfig } from "../services/schedule-config";
+import SentMessage from "../models/sent-message";
 import enqueueMessage from "../services/enqueue-message";
+import { getCustomerScheduleConfig } from "../services/schedule-config";
 import { addMinutesToDate } from "../utils/date";
 
 const recoveryTaskConfig = z.object({
@@ -11,43 +12,42 @@ const recoveryTaskConfig = z.object({
   notificationCount: z.number(),
 });
 export async function sendRecoveryMsg(task: any) {
-  const { customerId, customerEmail, emailNotification } =
+  const { customerId, customerEmail, emailNotification, notificationCount } =
     recoveryTaskConfig.parse(task);
 
   const checkout = await AbandonedCheckout.findOne({
-    customer_id: customerId,
+    customerId,
+    orderCompleted: false,
   });
 
   if (!checkout) {
-    throw new Error("Abandoned checkout not found");
-  }
-
-  if (checkout.orderCompleted) {
-    console.log("Abandoned checkout already completed");
+    console.log(`No abandoned checkout found for customer - ${customerId}`);
     return;
   }
 
   // TODO: Send email notification
   console.log(`Email notification sent to customer - ${customerId}`);
+  const emailSentAt = new Date();
 
   // Update the abandoned checkout
-  await checkout.updateOne(
+  await AbandonedCheckout.updateOne(
     { customerId },
-    { $inc: { notificationCount: 1 }, lastNotificationSentAt: Date.now() }
+    { $inc: { notificationCount: 1 }, lastNotificationSentAt: emailSentAt }
   );
 
-  // TODO: Store the sent notification in database
+  // Store the sent notification in database
+  const sentMessage = new SentMessage({
+    customerId,
+    messageSentAt: emailSentAt,
+    messageContent: emailNotification,
+  });
+  await sentMessage.save();
 
-  // TODO: Enqueue next recovery message
+  // Enqueue next recovery message
   const { recoveryIntervals } = await getCustomerScheduleConfig(customerId);
-  console.log(
-    "recovery intervals during task processing ",
-    JSON.stringify(recoveryIntervals)
-  );
 
-  if (recoveryIntervals.length > checkout.notificationCount) {
-    const nextInterval =
-      recoveryIntervals[checkout.notificationCount].intervalInMinutes;
+  if (recoveryIntervals.length > notificationCount) {
+    const nextInterval = recoveryIntervals[notificationCount].intervalInMinutes;
     const nextDelayInMs = addMinutesToDate(
       checkout.checkoutInitiatedAt,
       nextInterval
@@ -56,7 +56,7 @@ export async function sendRecoveryMsg(task: any) {
       customerId,
       customerEmail,
       emailNotification,
-      notificationCount: checkout.notificationCount + 1,
+      notificationCount: notificationCount + 1,
     };
 
     await enqueueMessage(`${customerId}`, notificationData, nextDelayInMs);

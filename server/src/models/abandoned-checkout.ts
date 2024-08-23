@@ -1,19 +1,24 @@
 import { Schema, model } from "mongoose";
 
-const customerSchema = new Schema({
-  firstName: {
-    type: String,
-    required: true,
+const customerSchema = new Schema(
+  {
+    firstName: {
+      type: String,
+      required: true,
+    },
+    lastName: {
+      type: String,
+      required: true,
+    },
+    email: {
+      type: String,
+      required: true,
+    },
   },
-  lastName: {
-    type: String,
-    required: true,
-  },
-  email: {
-    type: String,
-    required: true,
-  },
-});
+  {
+    _id: false,
+  }
+);
 
 const abandonedCheckoutSchema = new Schema(
   {
@@ -39,6 +44,7 @@ const abandonedCheckoutSchema = new Schema(
     },
     lastNotificationSentAt: {
       type: Date,
+      default: null,
     },
     notificationCount: {
       type: Number,

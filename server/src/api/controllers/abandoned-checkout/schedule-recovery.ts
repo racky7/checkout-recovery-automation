@@ -9,9 +9,21 @@ export default async (req: Request, res: Response) => {
   const { customer, abandoned_checkout_url, created_at } =
     abandonedCheckoutValidation.parse(req.body);
 
+  // Check if checkout already exist for customer
+  const existingCheckout = await AbandonedCheckout.findOne({
+    customerId: customer.id,
+  });
+
+  if (existingCheckout) {
+    // Remove existing checkout
+    await AbandonedCheckout.deleteOne({
+      customerId: customer.id,
+    });
+  }
+
   // Create new abandoned checkout
   const checkout = new AbandonedCheckout({
-    customerId: customer.customer_id,
+    customerId: customer.id,
     customerDetails: {
       firstName: customer.first_name,
       lastName: customer.last_name,
@@ -24,9 +36,7 @@ export default async (req: Request, res: Response) => {
   await checkout.save();
 
   // Get customer schedule recovery config
-  const { recoveryIntervals } = await getCustomerScheduleConfig(
-    customer.customer_id
-  );
+  const { recoveryIntervals } = await getCustomerScheduleConfig(customer.id);
 
   // Enqueue message for first recovery interval
   const firstRecoveryInterval = recoveryIntervals[0].intervalInMinutes;
@@ -35,13 +45,13 @@ export default async (req: Request, res: Response) => {
     firstRecoveryInterval
   ).durationMs;
   const notificationData = {
-    customerId: customer.customer_id,
+    customerId: customer.id,
     customerEmail: customer.email,
     emailNotification: `Hi ${customer.first_name}, please recover your abandoned checkout. Thank you!`,
     notificationCount: 1,
   };
 
-  await enqueueMessage(`${customer.customer_id}`, notificationData, delayInMs);
+  await enqueueMessage(`${customer.id}`, notificationData, delayInMs);
 
   res
     .status(200)

@@ -1,7 +1,8 @@
 import ScheduleConfig from "../models/schedule-config";
 import { scheduleConfigValidation } from "../validations/schedule-config";
 
-const defaultRecoveryIntervals = [30, 60, 180];
+// const defaultRecoveryIntervals = [30, 60, 180];
+const defaultRecoveryIntervals = [1, 2, 3];
 
 export const getCustomerScheduleConfig = async (customerId: number) => {
   let scheduleConfig = await ScheduleConfig.findOne({ customerId });
