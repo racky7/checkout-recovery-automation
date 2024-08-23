@@ -8,6 +8,8 @@ export default async (req: Request, res: Response) => {
     order: { id: order_id, customer },
   } = orderValidation.parse(req.body);
 
+  console.log(`order placed for customer - ${customer.id}`);
+
   // Check if checkout already exist for customer
   const abandonedCheckout = await AbandonedCheckout.findOne({
     customerId: customer.id,
@@ -43,6 +45,9 @@ export default async (req: Request, res: Response) => {
         orderCompletedAfterMessage: true,
         completedOrderId: order_id,
       }
+    );
+    console.log(
+      `updated the latest sent message to customer ${customer.id} after completed order - ${order_id}`
     );
   }
 

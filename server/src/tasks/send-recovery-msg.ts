@@ -17,11 +17,17 @@ export async function sendRecoveryMsg(task: any) {
 
   const checkout = await AbandonedCheckout.findOne({
     customerId,
-    orderCompleted: false,
   });
 
   if (!checkout) {
     console.log(`No abandoned checkout found for customer - ${customerId}`);
+    return;
+  }
+
+  if (checkout.orderCompleted) {
+    console.log(
+      `TASK REJECTED - Order already completed for customer - ${customerId}`
+    );
     return;
   }
 
