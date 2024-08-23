@@ -1,38 +1,24 @@
-import { columns, Message } from "@/components/messages-table/columns";
+import { columns } from "@/components/messages-table/columns";
 import { DataTable } from "@/components/messages-table/data-table";
-import { useEffect, useState } from "react";
-import { QueryStatus } from "@/lib/query";
-import { API_BASE_URL } from "@/lib/constants";
+import { Button } from "@/components/ui/button";
+import useFetchMessages from "@/hooks/useFetchMessages";
 
 export default function MessagesPage() {
-  const [data, setData] = useState<Message[]>([]);
-  const [queryStatus, setQueryStatus] = useState<QueryStatus>(undefined);
-
-  const fetchAllMessages = async () => {
-    try {
-      setQueryStatus("loading");
-      const response = await fetch(`${API_BASE_URL}/api/messages`);
-      const messages: Message[] = await response.json();
-      setData(messages);
-      setQueryStatus("success");
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (error) {
-      setQueryStatus("error");
-    }
-  };
-
-  useEffect(() => {
-    fetchAllMessages();
-    return () => {};
-  }, []);
+  const { data, queryStatus, refetch } = useFetchMessages();
 
   return (
-    <div className="container mx-auto py-10">
-      {queryStatus === "loading" ? <p>Loading table data...</p> : null}
-      {queryStatus === "error" ? <p>Error loading table data</p> : null}
-      {queryStatus === "success" ? (
-        <DataTable columns={columns} data={data} />
-      ) : null}
+    <div className="container space-y-10 mx-auto py-10">
+      <div className="w-full flex justify-between items-center">
+        <h1>All Sent Messages</h1>
+        <Button onClick={refetch} disabled={queryStatus === "loading"}>
+          Refresh Data
+        </Button>
+      </div>
+      {queryStatus === "loading" && <p>Loading table data...</p>}
+      {queryStatus === "error" && (
+        <p className="text-red-500">Error loading table data</p>
+      )}
+      {queryStatus === "success" && <DataTable columns={columns} data={data} />}
     </div>
   );
 }
