@@ -1,8 +1,4 @@
-node_modules/
-.vscode
-.cache/
-public/static
-*.marko.js
-.env.example
-.logs/*.log
-dist/
+/node_modules/
+/.vscode
+/dist/
+/log.txt
