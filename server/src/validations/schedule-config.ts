@@ -7,3 +7,8 @@ export const scheduleConfigValidation = z.object({
     })
   ),
 });
+
+export const scheduleConfigUpdateValidation = z.object({
+  customerId: z.number(),
+  recoveryIntervalMinutes: z.array(z.number()),
+});

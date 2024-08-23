@@ -1,0 +1,1 @@
+export const DEFAULT_RECOVERY_INTERVALS = [30, 1440, 4320];
