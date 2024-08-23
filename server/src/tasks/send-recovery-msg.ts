@@ -3,7 +3,7 @@ import AbandonedCheckout from "../models/abandoned-checkout";
 import SentMessage from "../models/sent-message";
 import enqueueMessage from "../services/enqueue-message";
 import { getCustomerScheduleConfig } from "../services/schedule-config";
-import { addMinutesToDate } from "../utils/date";
+import { addMinutesToDate, minutesToMs } from "../utils/date";
 
 const recoveryTaskConfig = z.object({
   customerId: z.number().min(1),
@@ -33,7 +33,14 @@ export async function sendRecoveryMsg(task: any) {
 
   // TODO: Send email notification
   console.log(`Email notification sent to customer - ${customerId}`);
-  const emailSentAt = new Date();
+
+  const { recoveryIntervals } = await getCustomerScheduleConfig(customerId);
+  const currentDelay =
+    recoveryIntervals[notificationCount - 1].intervalInMinutes;
+  const emailSentAt = addMinutesToDate(
+    checkout.checkoutInitiatedAt,
+    currentDelay
+  );
 
   // Update the abandoned checkout
   await AbandonedCheckout.updateOne(
@@ -50,14 +57,9 @@ export async function sendRecoveryMsg(task: any) {
   await sentMessage.save();
 
   // Enqueue next recovery message
-  const { recoveryIntervals } = await getCustomerScheduleConfig(customerId);
-
   if (recoveryIntervals.length > notificationCount) {
     const nextInterval = recoveryIntervals[notificationCount].intervalInMinutes;
-    const nextDelayInMs = addMinutesToDate(
-      checkout.checkoutInitiatedAt,
-      nextInterval
-    ).durationMs;
+    const nextDelayInMs = minutesToMs(nextInterval) - minutesToMs(currentDelay);
     const notificationData = {
       customerId,
       customerEmail,

@@ -3,7 +3,7 @@ import AbandonedCheckout from "../../../models/abandoned-checkout";
 import { abandonedCheckoutValidation } from "../../../validations/abndoned-checkout";
 import { getCustomerScheduleConfig } from "../../../services/schedule-config";
 import enqueueMessage from "../../../services/enqueue-message";
-import { addMinutesToDate } from "../../../utils/date";
+import { minutesToMs } from "../../../utils/date";
 
 export default async (req: Request, res: Response) => {
   const { customer, abandoned_checkout_url, created_at } =
@@ -40,10 +40,7 @@ export default async (req: Request, res: Response) => {
 
   // Enqueue message for first recovery interval
   const firstRecoveryInterval = recoveryIntervals[0].intervalInMinutes;
-  const delayInMs = addMinutesToDate(
-    checkout.checkoutInitiatedAt,
-    firstRecoveryInterval
-  ).durationMs;
+  const delayInMs = minutesToMs(firstRecoveryInterval);
   const notificationData = {
     customerId: customer.id,
     customerEmail: customer.email,
